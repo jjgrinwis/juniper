@@ -1,0 +1,42 @@
+routing-instances {
+    vrf01 {
+        interface irb.$vlan;
+    }
+    vs01 {
+        protocols {
+            evpn {
+                extended-vlan-list $vlan;
+            }
+        }
+        bridge-domains {
+            bd${vlan} {
+                vlan-id $vlan;
+                routing-interface irb.$vlan;
+            }
+        }
+    }
+}
+
+## create third octed for irb interface
+## first create integer object
+## then convert vlan to int using method from int. object and substract 1000 from it.
+## added extra () to clean up code, must be done according to granjean
+#set ($id = 0)
+#set ($id = ($id.parseInt($vlan)) - 1000 )
+
+interfaces {
+   ge-0/0/3 {
+      unit 0 {
+         family bridge {
+            vlan-id-list $vlan;
+         }
+      }
+   }
+   irb {
+      unit $vlan {
+         family inet {
+            address 192.168.$id.1/24
+         }
+      }
+   }
+}
