@@ -1,0 +1,13 @@
+---
+name_servers:
+    - 10.160.39.125
+    - 10.160.39.126
+
+ntp_servers:
+    - 10.160.39.125
+    - 10.160.39.126
+
+syslog_server: syslog.t-i.demo
+
+juniper_devices:
+    - 10.160.35.205a
