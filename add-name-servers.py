@@ -24,11 +24,11 @@ for juniper in myvars['juniper_devices']:
         output = device.open()
 
     # bind err variable to Exception raised by PyEZ open() method from Device class
-    # if anything wrong, an inherited class from jnpr.junos.exception.ConnectError base class raised
+    # if anything wrong, an inherited class from jnpr.junos.exception.ConnectError base class will be raised
     except Exception as err:
         # print type(err)
         print "Can't connect to %s, ERROR: %s" % (err.host, err)
-        exit(1)
+        break()
 
     # now bind Config class to this device which makes it a property of the :class:Device instance
     device.bind(cfg=Config)
@@ -50,7 +50,7 @@ for juniper in myvars['juniper_devices']:
     except Exception as err:
         print type(err)
         print err.rsp
-        exit(1)
+        break()
 
     # now commit config and close connection to juniper device
     if commit_check is True:
