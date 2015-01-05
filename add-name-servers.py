@@ -1,5 +1,5 @@
 # First PyEz test with YAML and jinja2 template engine
-# YAML file should contain juniper devices to configre
+# YAML file should contain juniper devices to configure
 
 import yaml
 from pprint import pprint
