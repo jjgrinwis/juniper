@@ -1,0 +1,217 @@
+## Last changed: 2015-02-09 22:21:08 CET
+version 14.1R2.12;
+system {
+    host-name vmx02;
+    domain-name t-i.demo;
+    time-zone Europe/Amsterdam;
+    root-authentication {
+        encrypted-password "$1$t2XpJg/p$zyk6krdyuUT0xnsxrLRpZ1"; ## SECRET-DATA
+    }
+    name-server {
+        10.160.39.125;
+        10.160.39.126;
+    }
+    login {
+        user telindus {
+            uid 2000;
+            class super-user;
+            authentication {
+                encrypted-password "$1$EP2F8Hhm$cLAr5pJAZDCDSSLFDpOiF0"; ## SECRET-DATA
+            }
+        }
+    }
+    services {
+        ssh {
+            max-sessions-per-connection 32;
+        }
+        netconf {
+            ssh;
+        }
+    }
+    syslog {
+        user * {
+            any emergency;
+        }
+        host syslog.t-i.demo {
+            any any;
+        }
+        file messages {
+            any notice;
+            authorization info;
+        }
+        file interactive-commands {
+            interactive-commands any;
+        }
+        file default-log-messages {
+            any info;
+            match "(requested 'commit' operation)|(copying configuration to juniper.save)|(commit complete)|ifAdminStatus|(FRU power)|(FRU removal)|(FRU insertion)|(link UP)|transitioned|Transferred|transfer-file|(license add)|(license delete)|(package -X update)|(package -X delete)|(FRU Online)|(FRU Offline)|(plugged in)|(unplugged)|CFMD_CCM_DEFECT| LFMD_3AH | RPD_MPLS_PATH_BFD|(Master Unchanged, Members Changed)|(Master Changed, Members Changed)|(Master Detected, Members Changed)|(vc add)|(vc delete)|(Master detected)|(Master changed)|(Backup detected)|(Backup changed)|(interface vcp-)";
+            structured-data;
+        }
+    }
+    ntp {
+        server 10.160.39.125;
+        server 10.160.39.126;
+    }
+}
+interfaces {
+    ge-0/0/0 {
+        unit 0 {
+            family inet {
+                address 10.160.35.75/24;
+            }
+        }
+    }
+    ge-0/0/1 {
+        unit 0 {
+            family inet {
+                address 192.168.10.2/24;
+            }
+            family mpls;
+        }
+    }
+    ge-0/0/2 {
+        encapsulation ethernet-bridge;
+        esi {
+            00:22:44:66:88:00:22:44:66:88;
+            single-active;
+        }
+        unit 0 {
+            family bridge;
+        }
+    }
+    ge-0/0/3 {
+        flexible-vlan-tagging;
+        inactive: encapsulation flexible-ethernet-services;
+        esi {
+            00:22:44:66:88:00:22:44:66:99;
+            single-active;
+        }
+        unit 0 {
+            family bridge {
+                interface-mode trunk;
+                vlan-id-list 1200;
+            }
+        }
+    }
+    irb {
+        unit 0 {
+            family inet {
+                address 10.0.0.1/24;
+            }
+        }
+        unit 1205 {
+            family inet {
+                address 192.168.205.1/24;
+            }
+        }
+    }
+    lo0 {
+        unit 0 {
+            family inet {
+                address 172.20.1.2/32;
+            }
+            family mpls;
+        }
+    }
+}
+snmp {
+    name vmx04;
+    location t-i.demo;
+    client-list managment {
+        10.160.35.0/24;
+    }
+    community public {
+        authorization read-only;
+        client-list-name management;
+    }
+    trap-group space {
+        targets {
+            10.160.35.153;
+        }
+    }
+}
+routing-options {
+    static {
+        route 0.0.0.0/0 next-hop 10.160.35.1;
+    }
+    router-id 172.20.1.2;
+    autonomous-system 65412;
+    forwarding-table {
+        chained-composite-next-hop {
+            ingress {
+                evpn;
+            }
+        }
+    }
+}
+protocols {
+    rsvp {
+        interface ge-0/0/1.0;
+    }
+    mpls {
+        no-cspf;
+        label-switched-path 2-vmx01 {
+            to 172.20.1.1;
+        }
+        label-switched-path 2-vmx03 {
+            to 172.20.1.3;
+        }
+        label-switched-path 2-vmx04 {
+            to 172.20.1.4;
+        }
+        interface ge-0/0/1.0;
+    }
+    bgp {
+        group ibgp {
+            type internal;
+            local-address 172.20.1.2;
+            family inet-vpn {
+                unicast;
+            }
+            family evpn {
+                signaling;
+            }
+            neighbor 172.20.1.3;
+            neighbor 172.20.1.4;
+            neighbor 172.20.1.1;
+        }
+    }
+    ospf {
+        area 0.0.0.0 {
+            interface lo0.0;
+            interface ge-0/0/1.0;
+        }
+    }
+    lldp {
+        interface ge-0/0/0;
+        interface ge-0/0/1;
+        interface ge-0/0/2;
+    }
+}
+routing-instances {
+    vrf01 {
+        instance-type vrf;
+        interface irb.0;
+        interface irb.1205;
+        route-distinguisher 172.20.1.4:101;
+        vrf-target target:65412:101;
+        vrf-table-label;
+    }
+    vs01 {
+        instance-type virtual-switch;
+        route-distinguisher 172.20.1.4:100;
+        vrf-target target:65412:100;
+        protocols {
+            evpn {
+                extended-vlan-list 1203;
+            }
+        }
+        bridge-domains {
+            bd01 {
+                vlan-id 1203;
+                interface ge-0/0/2.0;
+                routing-interface irb.0;
+            }
+        }
+    }
+}
